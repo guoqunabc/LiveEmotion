@@ -88,4 +88,4 @@ def pvt_time(data, index, values, aggfunc, name_col, time_type, window=None, sig
     fig.write_image(f'{path_fig}.png')
     print(f'{path_fig}图表导出成功')
 
-    return
+    return df_pvt, fig

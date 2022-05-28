@@ -52,22 +52,44 @@ df['minute'] = df['time'].apply(lambda x: math.floor(x / 60))
 df['second'] = df['time'].apply(lambda x: math.floor(x))
 
 # 分时统计与导出
-from func_supp import *
-pvt_time(data=df, index='minute', values=['sentence'], aggfunc=['count'],
-         name_col='弹幕条数', time_type='分')
+pvt_time_cnt_min = pvt_time(
+    data=df, index='minute', values=['sentence'], aggfunc=['count'],
+    name_col='弹幕条数', time_type='分')
 
-pvt_time(data=df, index='second', values=['sentence'], aggfunc=['count'],
-         name_col='弹幕条数', time_type='秒', window=121, signals=['波峰'])
+pvt_time_cnt_sec, fig_time_cnt_sec = pvt_time(
+    data=df, index='second', values=['sentence'], aggfunc=['count'],
+    name_col='弹幕条数', time_type='秒', window=121, signals=['波峰'])
 
-pvt_time(data=df, index='second', values=['sentence'], aggfunc=['count'],
-         name_col='弹幕条数', time_type='秒', window=121, signals=['波峰'])
+pvt_time_cnt_sec_2 = pd.pivot_table(df[df['情感'] >= 0.55], index='second', values=['sentence'], aggfunc=['count'])
+pvt_time_cnt_sec_2.columns = ['正面弹幕']
+pvt_time_cnt_sec_2[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_2.iloc[:, 0], window_length=121, polyorder=3)
+pvt_time_cnt_sec_2[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_2[f'平滑'], window_length=121, polyorder=3)
+pvt_time_cnt_sec_1 = pd.pivot_table(
+    df[(df['情感'] > 0.5) & (df['情感'] < 0.55)], index='second', values=['sentence'], aggfunc=['count'])
+pvt_time_cnt_sec_1.columns = ['中性弹幕']
+pvt_time_cnt_sec_1[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_1.iloc[:, 0], window_length=121, polyorder=3)
+pvt_time_cnt_sec_1[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_1[f'平滑'], window_length=121, polyorder=3)
+pvt_time_cnt_sec_0 = pd.pivot_table(df[df['情感'] < 0.5], index='second', values=['sentence'], aggfunc=['count'])
+pvt_time_cnt_sec_0.columns = ['负面弹幕']
+pvt_time_cnt_sec_0[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_0.iloc[:, 0], window_length=121, polyorder=3)
+pvt_time_cnt_sec_0[f'平滑'] = signal.savgol_filter(pvt_time_cnt_sec_0[f'平滑'], window_length=121, polyorder=3)
 
-pvt_time(data=df, index='minute', values=['情感'], aggfunc=['mean'],
-         name_col='弹幕情感', time_type='分')
+df_temp = pd.concat([pvt_time_cnt_sec_0, pvt_time_cnt_sec_1, pvt_time_cnt_sec_2], axis=1).fillna(0)
+fig = px.area(df_temp, x=df_temp.index, y=['负面弹幕', '中性弹幕', '正面弹幕'], title='弹幕数量堆积图')
+fig = px.line(df_temp, x=df_temp.index, y=['负面弹幕', '中性弹幕', '正面弹幕'], title='弹幕数量曲线图')
+fig.show()
+fig_time_cnt_sec.add_trace(go.Scatter(x=pvt_time_cnt_sec_2.index, y=pvt_time_cnt_sec_2[f'平滑'], name='正面弹幕'))
+fig_time_cnt_sec.add_trace(go.Scatter(x=pvt_time_cnt_sec_1.index, y=pvt_time_cnt_sec_1[f'平滑'], name='中性弹幕'))
+fig_time_cnt_sec.add_trace(go.Scatter(x=pvt_time_cnt_sec_0.index, y=pvt_time_cnt_sec_0[f'平滑'], name='负面弹幕'))
+fig_time_cnt_sec.show()
 
-pvt_time(data=df, index='second', values=['情感'], aggfunc=['mean'],
-         name_col='弹幕情感', time_type='秒', window=181, signals=['波峰', '波谷'])
+pvt_time_emo_min = pvt_time(
+    data=df, index='minute', values=['情感'], aggfunc=['mean'],
+    name_col='弹幕情感', time_type='分')
 
+pvt_time_emo_sec = pvt_time(
+    data=df, index='second', values=['情感'], aggfunc=['mean'],
+    name_col='弹幕情感', time_type='秒', window=181, signals=['波峰', '波谷'])
 
 ## 词云测试
 jieba.load_userdict(file_fix)
