@@ -21,15 +21,32 @@ from path_config import *
 def barrage_parse(path_file):
     doc = minidom.parse(path_file)
     data_barrage = doc.getElementsByTagName("d")
-    dict_data = {'sentence': [_.childNodes[0].data for _ in data_barrage],
-                 'time': [float(_.getAttribute('p').split(',')[0]) for _ in data_barrage],
+    # dict_data = {'sentence': [], 'time': []}
+    # for _ in tqdm(data_barrage):
+    #     if len(_.childNodes) > 0:
+    #         try:
+    #             dict_data['sentence'].append(_.childNodes[0].data)
+    #             dict_data['time'].append(float(_.getAttribute('p').split(',')[0]))
+    #         except:
+    #             print(_.childNodes[0].data)
+
+    dict_data = {'sentence': [_.childNodes[0].data for _ in data_barrage if len(_.childNodes) > 0],
+                 'time': [float(_.getAttribute('p').split(',')[0]) for _ in data_barrage if len(_.childNodes) > 0],
                  # 'type': [_.getAttribute('p').split(',')[1] for _ in data_barrage],
-                 'user': [_.getAttribute('user') for _ in data_barrage], }
+                 # 'user': [_.getAttribute('user') for _ in data_barrage],
+                 }
     _df = pd.DataFrame(dict_data)
-    return _df
+    print(f'{path_file}读入完成，shape={_df.shape}')
+    return _df.copy()
 
 
 def sec_trans_time(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return "%d:%02d:%02d" % (h, m, s)
+
+
+def time_trans_sec(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return "%d:%02d:%02d" % (h, m, s)
@@ -39,11 +56,12 @@ def ciyun(text_input, file_output):
     stylecloud.gen_stylecloud(
         text=text_input,  # 上面分词的结果作为文本传给text参数
         size=512,
-        max_words=150,
+        max_words=100,
         font_path='msyh.ttc',  # 字体设置
         palette='cartocolors.qualitative.Pastel_7',  # 调色方案选取，从palettable里选择
         gradient='horizontal',  # 渐变色方向选了垂直方向
-        # icon_name='fab fa-weixin',  # 蒙版选取，从Font Awesome里选
+        # icon_name='fa-solid fa-square',  # 蒙版选取，从Font Awesome里选
+        icon_name='fas fa-square',  # 蒙版选取，从Font Awesome里选
         output_name=file_output  # 输出词云图
     )
     print('词云图已生成')
@@ -82,10 +100,10 @@ def pvt_time(data, index, values, aggfunc, name_col, time_type, window=None, sig
         df_pvt[slc_peaks].to_excel(path_file)
         print(f'{path_file} 导出成功')
 
-    fig = px.line(df_pvt, x=time_type, y=y_output)
     path_fig = os.path.join(dir_img, f"{name_col}-{time_type}")
+    fig = px.line(df_pvt, x=time_type, y=y_output)
+    # fig.show()
     fig.write_html(f'{path_fig}.html')
-    fig.write_image(f'{path_fig}.png')
+    # fig.write_image(f'{path_fig}.png')
     print(f'{path_fig}图表导出成功')
-
     return df_pvt, fig
